@@ -1,0 +1,15 @@
+MARK 1 CLASSIFICATION REPORT
+
+              precision    recall  f1-score   support
+
+       Happy       0.69      0.71      0.70       773
+         Sad       0.37      0.47      0.42       407
+       Anger       0.67      0.11      0.19       417
+    Surprise       0.00      0.00      0.00       177
+     Disgust       0.47      0.32      0.38       300
+        Fear       0.50      0.01      0.01       171
+
+   micro avg       0.56      0.39      0.46      2245
+   macro avg       0.45      0.27      0.28      2245
+weighted avg       0.53      0.39      0.40      2245
+ samples avg       0.51      0.39      0.43      2245

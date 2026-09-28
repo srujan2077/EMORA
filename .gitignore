@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large datasets
+data/raw/
+data/processed/
+
+# Model checkpoints
+checkpoints/
+
+# MLflow
+mlruns/
+mlflow.db
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
