@@ -37,3 +37,16 @@ mlflow.db
 # OS
 .DS_Store
 Thumbs.db
+
+# Frontend dependencies and generated builds
+frontend/node_modules/
+frontend/dist/
+
+# Frontend environment variables and secrets
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Mark 3 experiment outputs
+outputs/
+artifacts/
