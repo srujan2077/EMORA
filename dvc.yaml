@@ -1,0 +1,9 @@
+stages:
+  mark3_validation_preflight:
+    cmd: python scripts/evaluate_mark3_step3_final.py --device cpu
+    deps:
+      - scripts/evaluate_mark3_step3_final.py
+      - scripts/train_mark3_step3_controlled.py
+      - src/models/temporal_fusion_mark3.py
+      - data/processed/mark3_temporal/val_windows.pt
+      - checkpoints/mark3_step3/multiseed_20261027

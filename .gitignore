@@ -50,3 +50,9 @@ frontend/.env.*
 # Mark 3 experiment outputs
 outputs/
 artifacts/
+
+# MLOps local state and reports
+.dvc/cache/
+.dvc/tmp/
+monitoring/reports/
+audit-results/validation_artifact_manifest.json

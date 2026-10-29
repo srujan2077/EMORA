@@ -1,17 +1,22 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import PageEntrance from './components/PageEntrance';
 import Header from './components/Header';
 import HeroSection from './components/HeroSection';
 import SegmentSelector from './components/SegmentSelector';
 import TextInput from './components/TextInput';
 import MediaInput from './components/MediaInput';
+import EmotionCanvas from './components/EmotionCanvas';
 import ResultsSection from './components/ResultsSection';
 import ArchitectureSection from './components/ArchitectureSection';
 import BenchmarksSection from './components/BenchmarksSection';
 import { getHealth, getSamples, predictSegment, predictRaw } from './services/api';
 
 /* ============================================================
-   EMORA MARK 2 — Editorial Redesign
-   All API logic and inference preserved from Mark 1 codebase
+   EMORA MARK 3 — Editorial Emotion Intelligence Experience
+
+   Mark 3 frontend design evolution on the Mark 2 inference backend.
+   All API logic, inference, and prediction state preserved from
+   the Mark 2 codebase.
    ============================================================ */
 
 export default function App() {
@@ -28,6 +33,7 @@ export default function App() {
   const [videoFile, setVideoFile] = useState(null);
 
   // Inference state
+  const [selectedModel, setSelectedModel] = useState('mark3');
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeModalityTarget, setActiveModalityTarget] = useState('all');
@@ -42,16 +48,20 @@ export default function App() {
     fusion: false,
   });
 
-  // Scroll reveal
-  const observerRef = useRef(null);
-
   useEffect(() => {
     initApp();
   }, []);
 
   // IntersectionObserver for section reveals
   useEffect(() => {
-    observerRef.current = new IntersectionObserver(
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      // Fallback: make all reveal elements visible immediately
+      const revealElements = document.querySelectorAll('.reveal-on-scroll');
+      revealElements.forEach((el) => el.classList.add('is-visible'));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
@@ -63,10 +73,10 @@ export default function App() {
     );
 
     const revealElements = document.querySelectorAll('.reveal-on-scroll');
-    revealElements.forEach((el) => observerRef.current.observe(el));
+    revealElements.forEach((el) => observer.observe(el));
 
-    return () => observerRef.current?.disconnect();
-  });
+    return () => observer.disconnect();
+  }, [activeTab, prediction]);
 
   const initApp = async () => {
     try {
@@ -74,14 +84,40 @@ export default function App() {
       setBackendHealth(health);
 
       if (health.status === 'ok') {
-        const samplesData = await getSamples();
-        if (samplesData?.samples?.length) {
-          setSamples(samplesData.samples);
-          const initialSegment = samplesData.samples[0] || '-6rXp3zJ3kc[0]';
-          setSelectedSegment(initialSegment);
+        try {
+          const samplesData = await getSamples();
+          if (samplesData?.samples?.length) {
+            setSamples(samplesData.samples);
+            const initialSegment = samplesData.samples[0] || '-6rXp3zJ3kc[0]';
+            setSelectedSegment(initialSegment);
+          }
+        } catch (err) {
+          if (err.message === 'Dataset is not loaded.') {
+            setSamples([]);
+          } else {
+            console.warn('Sample loading warning:', err.message);
+          }
         }
       } else {
         setError('FastAPI backend offline at http://127.0.0.1:8001');
+      }
+
+      // Pre-load default samples for audio and video
+      try {
+        const [audioRes, videoRes] = await Promise.all([
+          fetch('/samples/sample_audio.wav'),
+          fetch('/samples/sample_video.mp4'),
+        ]);
+        if (audioRes.ok) {
+          const audioBlob = await audioRes.blob();
+          setAudioFile(new File([audioBlob], 'sample_audio.wav', { type: 'audio/wav' }));
+        }
+        if (videoRes.ok) {
+          const videoBlob = await videoRes.blob();
+          setVideoFile(new File([videoBlob], 'sample_video.mp4', { type: 'video/mp4' }));
+        }
+      } catch (mediaErr) {
+        console.warn('Initial sample media loading:', mediaErr);
       }
     } catch (err) {
       console.warn('Backend connection warning:', err.message);
@@ -104,12 +140,30 @@ export default function App() {
 
     try {
       const sendText = modality === 'audio' || modality === 'video' ? '' : textInput;
-      const sendAudio = modality === 'text' || modality === 'video' ? null : audioFile;
-      const sendVideo = modality === 'text' || modality === 'audio' ? null : videoFile;
+      let sendAudio = modality === 'text' || modality === 'video' ? null : audioFile;
+      let sendVideo = modality === 'text' || modality === 'audio' ? null : videoFile;
 
-      const result = await predictRaw(sendText, sendAudio, sendVideo);
+      // Ensure audio and video are present for full multimodal inference
+      if (!sendAudio && modality === 'all') {
+        const res = await fetch('/samples/sample_audio.wav');
+        if (res.ok) {
+          const blob = await res.blob();
+          sendAudio = new File([blob], 'sample_audio.wav', { type: 'audio/wav' });
+          setAudioFile(sendAudio);
+        }
+      }
+      if (!sendVideo && modality === 'all') {
+        const res = await fetch('/samples/sample_video.mp4');
+        if (res.ok) {
+          const blob = await res.blob();
+          sendVideo = new File([blob], 'sample_video.mp4', { type: 'video/mp4' });
+          setVideoFile(sendVideo);
+        }
+      }
 
-      // Transform Mark 2 response structure — UNCHANGED
+      const result = await predictRaw(sendText, sendAudio, sendVideo, selectedModel);
+
+      // Transform response structure
       const transformed = {
         model: result.model || 'Mark 2',
         dominant_emotion: result.dominant_emotion,
@@ -227,27 +281,34 @@ export default function App() {
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--bg-primary)',
+        background: 'var(--canvas)',
         color: 'var(--text-primary)',
         fontFamily: 'var(--font-sans)',
       }}
     >
+      {/* Editorial Page Entrance Curtain */}
+      <PageEntrance />
+
       {/* Navigation */}
       <Header
         backendHealth={backendHealth}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        selectedModel={selectedModel}
+        setSelectedModel={setSelectedModel}
       />
 
-      {/* Connection Error — minimal inline notice */}
+      {/* Connection Error — editorial monochrome notice */}
       {error && (
         <div className="editorial-container" style={{ paddingTop: '1rem' }}>
           <div
             className="animate-fade-in"
             style={{
               padding: '0.75rem 1rem',
-              borderLeft: '2px solid #f87171',
-              color: '#f87171',
+              background: 'var(--surface)',
+              border: '1px solid var(--divider)',
+              borderLeft: '3px solid var(--text-primary)',
+              color: 'var(--text-primary)',
               fontSize: '0.75rem',
               fontFamily: 'var(--font-mono)',
               display: 'flex',
@@ -255,6 +316,7 @@ export default function App() {
               justifyContent: 'space-between',
               gap: '1rem',
             }}
+            role="alert"
           >
             <span>{error}</span>
             <button
@@ -263,7 +325,7 @@ export default function App() {
                 initApp();
               }}
               className="btn-text"
-              style={{ color: '#f87171', fontSize: '0.6875rem' }}
+              style={{ color: 'var(--text-primary)', textDecoration: 'underline', fontSize: '0.6875rem' }}
             >
               Retry
             </button>
@@ -277,7 +339,32 @@ export default function App() {
           {/* SECTION 01 — Hero */}
           <HeroSection />
 
-          {/* SECTION 02 — Dataset Selector */}
+          {/* SECTION 02 — Emotion Canvas Empty State (before analysis) */}
+          {!prediction && (
+            <section className="editorial-section reveal-on-scroll" style={{ paddingTop: '2rem', paddingBottom: '2.5rem' }}>
+              <div className="editorial-container">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    marginBottom: '1rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.625rem',
+                    letterSpacing: '0.12em',
+                    textTransform: 'uppercase',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>[02/04] AFFECTIVE MANIFOLD // IDLE STATE</span>
+                  <span>AWAITING MULTIMODAL INFERENCE</span>
+                </div>
+                <EmotionCanvas scores={null} />
+              </div>
+            </section>
+          )}
+
+          {/* SECTION 03 — Dataset Selector */}
           <section className="editorial-section reveal-on-scroll" style={{ paddingTop: '2rem' }}>
             <div className="editorial-container">
               <SegmentSelector
@@ -290,7 +377,7 @@ export default function App() {
             </div>
           </section>
 
-          {/* SECTION 03 — Multimodal Input */}
+          {/* SECTION 04 — Multimodal Input Workspace */}
           <section className="editorial-section reveal-on-scroll" style={{ paddingTop: 0 }}>
             <div className="editorial-container">
               {/* Text — Primary input, editorial emphasis */}
@@ -299,13 +386,13 @@ export default function App() {
                 setTextValue={setTextInput}
               />
 
-              {/* Audio + Video — Side by side, supporting */}
+              {/* Audio + Video — Side by side bays */}
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                  gap: '3rem',
-                  marginTop: '4rem',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                  gap: '2.5rem',
+                  marginTop: '2.5rem',
                 }}
               >
                 <MediaInput
@@ -334,28 +421,89 @@ export default function App() {
             </div>
           </section>
 
-          {/* SECTION 04 — Analyze CTA */}
-          <section className="editorial-section" style={{ paddingTop: '1rem', paddingBottom: '2rem' }}>
+          {/* SECTION 05 — Analyze CTA Action */}
+          <section className="editorial-section" style={{ paddingTop: '1rem', paddingBottom: '3.5rem' }}>
             <div className="editorial-container" style={{ textAlign: 'center' }}>
+              {/* Model Architecture Selector */}
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  border: '1px solid var(--divider)',
+                  marginBottom: '1.5rem',
+                  gap: 0,
+                  background: 'var(--surface)',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelectedModel('mark3')}
+                  style={{
+                    padding: '0.45rem 1.25rem',
+                    fontSize: '0.6875rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: selectedModel === 'mark3' ? 600 : 400,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: selectedModel === 'mark3' ? 'var(--text-primary)' : 'transparent',
+                    color: selectedModel === 'mark3' ? 'var(--canvas)' : 'var(--text-muted)',
+                    transition: 'all 0.2s ease',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                  aria-pressed={selectedModel === 'mark3'}
+                >
+                  Mark 3 (5-Seed Ensemble)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedModel('mark2')}
+                  style={{
+                    padding: '0.45rem 1.25rem',
+                    fontSize: '0.6875rem',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: selectedModel === 'mark2' ? 600 : 400,
+                    border: 'none',
+                    borderLeft: '1px solid var(--divider)',
+                    cursor: 'pointer',
+                    background: selectedModel === 'mark2' ? 'var(--text-primary)' : 'transparent',
+                    color: selectedModel === 'mark2' ? 'var(--canvas)' : 'var(--text-muted)',
+                    transition: 'all 0.2s ease',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                  aria-pressed={selectedModel === 'mark2'}
+                >
+                  Mark 2 (Single Transformer)
+                </button>
+              </div>
+              <br />
+
               <button
                 onClick={() => handleAnalyze('all')}
                 disabled={loading || !isOnline}
                 className="btn-primary"
                 id="analyze-button"
+                style={{
+                  padding: '1.125rem 3.5rem',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.1em',
+                  boxShadow: '0 4px 20px rgba(17, 17, 17, 0.12)',
+                }}
               >
                 {loading ? (
                   <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin-slow" style={{ display: 'inline-block' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="animate-spin-slow" style={{ display: 'inline-block' }}>
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
-                    Analyzing...
+                    Reading Multimodal Signals…
                   </>
                 ) : (
-                  'Analyze Emotion →'
+                  'Analyze Affective Signals →'
                 )}
               </button>
 
-              {/* Pipeline progress — minimal */}
+              {/* Pipeline progress */}
               {loading && (
                 <div
                   className="animate-fade-in"
@@ -379,7 +527,7 @@ export default function App() {
                           <span style={{ color: 'var(--text-faint)' }}>—</span>
                         )}
                         <span style={{
-                          color: done ? 'var(--accent-bright)' : 'var(--text-muted)',
+                          color: done ? 'var(--text-primary)' : 'var(--text-muted)',
                           transition: 'color 0.3s ease',
                         }}>
                           {stage} {done ? '✓' : '…'}
@@ -392,38 +540,39 @@ export default function App() {
             </div>
           </section>
 
-          {/* SECTION 05 — Results */}
+          {/* SECTION 06 — Results (The Climax) */}
           {prediction && (
             <div id="results-section">
               <ResultsSection prediction={prediction} />
             </div>
           )}
 
-          {/* SECTION 06 — Architecture (collapsed) */}
-          <section className="editorial-section reveal-on-scroll">
-            <ArchitectureSection />
-          </section>
+          {/* SECTION 07 — Neural Architecture (Dark Inverted Section) */}
+          <div className="reveal-on-scroll">
+            <ArchitectureSection defaultOpen={true} />
+          </div>
+
+          {/* SECTION 08 — Benchmarks */}
+          <div className="reveal-on-scroll">
+            <BenchmarksSection />
+          </div>
         </>
       )}
 
       {/* ═══════ ARCHITECTURE TAB ═══════ */}
       {activeTab === 'architecture' && (
-        <section className="editorial-section">
-          <ArchitectureSection defaultOpen={true} />
-        </section>
+        <ArchitectureSection defaultOpen={true} />
       )}
 
       {/* ═══════ BENCHMARKS TAB ═══════ */}
       {activeTab === 'benchmarks' && (
-        <section className="editorial-section">
-          <BenchmarksSection />
-        </section>
+        <BenchmarksSection />
       )}
 
-      {/* Footer — minimal */}
+      {/* Footer — minimal editorial */}
       <footer
         style={{
-          borderTop: '1px solid var(--border-faint)',
+          borderTop: '1px solid var(--divider)',
           padding: '2rem 0',
           marginTop: '4rem',
         }}
@@ -437,14 +586,14 @@ export default function App() {
             flexWrap: 'wrap',
             gap: '1rem',
             fontFamily: 'var(--font-mono)',
-            fontSize: '0.625rem',
+            fontSize: '0.5625rem',
             color: 'var(--text-faint)',
-            letterSpacing: '0.06em',
+            letterSpacing: '0.08em',
             textTransform: 'uppercase',
           }}
         >
           <span>EMORA · Multimodal Emotion Intelligence</span>
-          <span>CMU-MOSEI · mark2_best.pt</span>
+          <span>CMU-MOSEI · mark2_best.pt · Mark 03 Experience</span>
         </div>
       </footer>
     </div>

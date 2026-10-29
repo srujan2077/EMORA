@@ -1,0 +1,19 @@
+services:
+  emora-mark3-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      EMORA_MARK3_CHECKPOINT_ROOT: /models/mark3_step3/multiseed_20261027
+      EMORA_MARK3_REPORT_PATH: /reports/mark3_step3_final_20261027_151500.json
+      EMORA_CORS_ORIGINS: http://localhost:5173
+    volumes:
+      - ./checkpoints:/models:ro
+      - ./reports:/reports:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

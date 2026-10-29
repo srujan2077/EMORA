@@ -1,0 +1,29 @@
+name: repository-safety
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject locked-test references in normal automation
+        shell: bash
+        run: |
+          ! grep -R --line-number --exclude=safety.yml -E \
+            '--evaluate-test|test_windows\.pt' .github/workflows monitoring 2>/dev/null
+      - name: Check forbidden tracked paths
+        shell: bash
+        run: |
+          ! git ls-files | grep -E '(^|/)(checkpoints|mlruns|\.venv|data/raw|data/processed)/|mlflow\.db'
+      - name: Validate YAML and DVC metadata syntax
+        run: |
+          python - <<'PY'
+          import pathlib
+          import yaml
+          for path in [pathlib.Path("dvc.yaml")]:
+              yaml.safe_load(path.read_text())
+          print("metadata syntax ok")
+          PY

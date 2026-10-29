@@ -107,7 +107,7 @@ export default function EmotionProfile({ prediction, threshold = 0.5 }) {
       <div className="mt-5 pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-muted)] font-mono">
         <span>0%</span>
         <span className="text-white/70">
-          {prediction.emotions_detail ? 'Per-emotion optimized thresholds' : `Decision Threshold: τ = ${threshold.toFixed(2)}`}
+          {prediction.emotions_detail ? 'Fixed 0.5 decision thresholds' : `Decision Threshold: τ = ${threshold.toFixed(2)}`}
         </span>
         <span>100%</span>
       </div>

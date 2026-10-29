@@ -1,0 +1,7 @@
+[core]
+    analytics = false
+
+# Configure a remote outside Git after approval. Do not commit credentials.
+# Example:
+# [remote "approved-storage"]
+#     url = s3://REPLACE_WITH_APPROVED_BUCKET/emora

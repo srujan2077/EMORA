@@ -107,33 +107,46 @@ export default function BenchmarksView() {
       {/* Model Evolution Comparison Table */}
       <div className="p-4 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-3">
         <div className="text-xs font-semibold text-white uppercase font-mono tracking-wider">
-          Architecture Evolution: Mark 1 vs. Mark 2
+          Architecture Evolution: Mark 1 → Mark 2 → Mark 3
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-sans">
           <div className="p-3.5 rounded-lg bg-[var(--bg-app)] border border-[var(--border-subtle)] space-y-2">
-            <div className="font-mono text-xs font-semibold text-emerald-400">
+            <div className="font-mono text-xs font-semibold text-zinc-400">
               Mark 1: Baseline Architecture
             </div>
             <ul className="space-y-1 text-[11px] text-[var(--text-secondary)] font-mono">
-              <li>• Text: GloVe (300-d) + BiLSTM (128-d)</li>
-              <li>• Audio: COVAREP (74-d) + BiLSTM (128-d)</li>
-              <li>• Vision: FACET (35-d) + BiLSTM (128-d)</li>
+              <li>• Text: GloVe + BiLSTM</li>
+              <li>• Audio: COVAREP + BiLSTM</li>
+              <li>• Vision: FACET + BiLSTM</li>
               <li>• Fusion: Concat (384-d) + MLP</li>
-              <li>• Checkpoint: checkpoints/mark1_best.pt</li>
+              <li>• Checkpoint: mark1_best.pt</li>
             </ul>
           </div>
 
-          <div className="p-3.5 rounded-lg bg-[var(--bg-app)] border border-indigo-500/30 space-y-2">
+          <div className="p-3.5 rounded-lg bg-[var(--bg-app)] border border-[var(--border-subtle)] space-y-2">
             <div className="font-mono text-xs font-semibold text-indigo-300">
               Mark 2: Deep Transformer Fusion
             </div>
             <ul className="space-y-1 text-[11px] text-[var(--text-secondary)] font-mono">
-              <li>• Text: DeBERTa-v3-base (768-d → 256-d)</li>
-              <li>• Audio: Wav2Vec2-base-960h (768-d → 256-d)</li>
-              <li>• Vision: ViT-base-patch16-224 (768-d → 256-d)</li>
-              <li>• Fusion: 2-Layer Transformer self-attention</li>
-              <li>• Checkpoint: checkpoints/mark2_best.pt</li>
+              <li>• Text: DeBERTa-v3-base</li>
+              <li>• Audio: Wav2Vec2-base-960h</li>
+              <li>• Vision: ViT-base-patch16-224</li>
+              <li>• Fusion: 2-Layer Transformer</li>
+              <li>• Checkpoint: mark2_best.pt</li>
+            </ul>
+          </div>
+
+          <div className="p-3.5 rounded-lg bg-[var(--bg-app)] border border-emerald-500/40 space-y-2">
+            <div className="font-mono text-xs font-semibold text-emerald-400">
+              Mark 3: Temporal SOTA Ensemble
+            </div>
+            <ul className="space-y-1 text-[11px] text-[var(--text-secondary)] font-mono">
+              <li>• Encoders: DeBERTa + Wav2Vec2 + ViT</li>
+              <li>• Temporal: Causal window (T ≤ 8)</li>
+              <li>• Candidate: Controlled split_at_gap</li>
+              <li>• Ensemble: 5 seeds (42..2026)</li>
+              <li>• Thresholds: Fixed 0.5 provisional policy</li>
             </ul>
           </div>
         </div>

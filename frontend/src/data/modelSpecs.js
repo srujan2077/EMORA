@@ -7,41 +7,55 @@ export const EMOTIONS = [
   'Fear',
 ];
 
+/* ============================================================
+   EMOTION PALETTE — Mark 3 Editorial Design Tokens
+   Single source of truth for all emotion colours.
+   These are design tokens, not model parameters.
+   ============================================================ */
+export const EMOTION_PALETTE = {
+  Happy:    { hex: '#E8B931', rgb: '232,185,49'  },
+  Sad:      { hex: '#548CE8', rgb: '84,140,232'  },
+  Anger:    { hex: '#E45B52', rgb: '228,91,82'   },
+  Surprise: { hex: '#B39AF5', rgb: '179,154,245' },
+  Disgust:  { hex: '#82A96C', rgb: '130,169,108' },
+  Fear:     { hex: '#8176E8', rgb: '129,118,232' },
+};
+
 export const EMOTION_META = {
   Happy: {
-    color: '#10b981',
-    lightColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.25)',
+    color: EMOTION_PALETTE.Happy.hex,
+    lightColor: `rgba(${EMOTION_PALETTE.Happy.rgb}, 0.12)`,
+    borderColor: `rgba(${EMOTION_PALETTE.Happy.rgb}, 0.25)`,
     description: 'Positive affect, joyful or satisfied expressions',
   },
   Sad: {
-    color: '#60a5fa',
-    lightColor: 'rgba(96, 165, 250, 0.1)',
-    borderColor: 'rgba(96, 165, 250, 0.25)',
+    color: EMOTION_PALETTE.Sad.hex,
+    lightColor: `rgba(${EMOTION_PALETTE.Sad.rgb}, 0.12)`,
+    borderColor: `rgba(${EMOTION_PALETTE.Sad.rgb}, 0.25)`,
     description: 'Sorrow, grief, or melancholic tone',
   },
   Anger: {
-    color: '#f87171',
-    lightColor: 'rgba(248, 113, 113, 0.1)',
-    borderColor: 'rgba(248, 113, 113, 0.25)',
+    color: EMOTION_PALETTE.Anger.hex,
+    lightColor: `rgba(${EMOTION_PALETTE.Anger.rgb}, 0.12)`,
+    borderColor: `rgba(${EMOTION_PALETTE.Anger.rgb}, 0.25)`,
     description: 'Frustration, irritation, or hostile acoustic cues',
   },
   Surprise: {
-    color: '#c084fc',
-    lightColor: 'rgba(192, 132, 252, 0.1)',
-    borderColor: 'rgba(192, 132, 252, 0.25)',
+    color: EMOTION_PALETTE.Surprise.hex,
+    lightColor: `rgba(${EMOTION_PALETTE.Surprise.rgb}, 0.12)`,
+    borderColor: `rgba(${EMOTION_PALETTE.Surprise.rgb}, 0.25)`,
     description: 'Unexpected astonishment or startled vocal inflection',
   },
   Disgust: {
-    color: '#fbbf24',
-    lightColor: 'rgba(251, 191, 36, 0.1)',
-    borderColor: 'rgba(251, 191, 36, 0.25)',
+    color: EMOTION_PALETTE.Disgust.hex,
+    lightColor: `rgba(${EMOTION_PALETTE.Disgust.rgb}, 0.12)`,
+    borderColor: `rgba(${EMOTION_PALETTE.Disgust.rgb}, 0.25)`,
     description: 'Revulsion, distaste, or aversion reactions',
   },
   Fear: {
-    color: '#818cf8',
-    lightColor: 'rgba(129, 140, 248, 0.1)',
-    borderColor: 'rgba(129, 140, 248, 0.25)',
+    color: EMOTION_PALETTE.Fear.hex,
+    lightColor: `rgba(${EMOTION_PALETTE.Fear.rgb}, 0.12)`,
+    borderColor: `rgba(${EMOTION_PALETTE.Fear.rgb}, 0.25)`,
     description: 'Apprehension, distress, or anxious prosody',
   },
 };
@@ -57,6 +71,31 @@ export const MARK2_BENCHMARK = {
     Surprise: 0.3056,
     Disgust: 0.5594,
     Fear: 0.2523,
+  },
+};
+
+export const MARK3_BENCHMARK = {
+  microF1: 0.5220,
+  macroF1: 0.4629,
+  subsetAccuracy: 0.2179,
+  perEmotionF1: {
+    Happy: 0.7233,
+    Sad: 0.4627,
+    Anger: 0.5244,
+    Surprise: 0.2965,
+    Disgust: 0.5051,
+    Fear: 0.2655,
+  },
+  ensembleSize: 5,
+  seeds: [42, 123, 456, 789, 2026],
+  candidate: 'split_at_gap',
+  thresholds: {
+    Happy: 0.5,
+    Sad: 0.5,
+    Anger: 0.5,
+    Surprise: 0.5,
+    Disgust: 0.5,
+    Fear: 0.5,
   },
 };
 
@@ -88,5 +127,15 @@ export const ARCHITECTURE_DETAILS = {
     output: '256-D fused representation → Classifier → 6 emotion logits',
     loss: 'BCEWithLogitsLoss (Multi-label)',
     training: 'Selective fine-tuning (Mark 2.5 checkpoint: checkpoints/mark2_5_fast_best.pt)',
+  },
+  mark3: {
+    title: 'Mark 3 (Temporal Multimodal Fusion Ensemble)',
+    textEncoder: 'DeBERTa-v3-base (768-d, mask-aware mean pooling)',
+    audioEncoder: 'Wav2Vec2-base-960h (768-d, FFmpeg 16kHz mono, mean pooling)',
+    visionEncoder: 'ViT-base-patch16-224-in21k (768-d, uniform 8-frame CLS mean)',
+    temporal: 'Causal window of up to 8 segments with controlled split_at_gap suffix',
+    fusion: 'Modality gating + Relative temporal position embeddings + Gap projections + 2-Layer Transformer',
+    ensemble: '5-Seed Ensemble (Seeds 42, 123, 456, 789, 2026) with fixed 0.5 thresholds',
+    output: 'Ensemble averaged probabilities with independent sigmoid decisions at 0.5',
   },
 };

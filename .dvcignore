@@ -1,0 +1,12 @@
+# Never stage locked test data or generated local state.
+data/processed/**/test_windows.pt
+data/raw/
+checkpoints/
+mlruns/
+mlflow.db
+audit-results/
+frontend/node_modules/
+frontend/dist/
+.venv/
+__pycache__/
+*.py[cod]

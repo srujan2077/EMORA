@@ -1,0 +1,7 @@
+# Existing runtime packages are intentionally not duplicated here.
+# Install this file only after review; Docker/CI use their own pinned subset.
+mlflow==3.16.1
+evidently==0.7.20
+dvc==3.66.1
+pandas==3.0.6
+pyyaml==6.0.3

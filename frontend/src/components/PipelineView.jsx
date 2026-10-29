@@ -160,7 +160,7 @@ export default function PipelineView() {
               Linear Classifier (256 → 6 Logits) + Independent Sigmoids
             </div>
             <p className="text-[11px] text-[var(--text-muted)]">
-              Evaluated against per-emotion decision thresholds optimized on the validation split.
+              Evaluated with independent sigmoid decisions at the fixed 0.5 threshold.
             </p>
             <div className="flex flex-wrap justify-center gap-2 pt-2 font-mono text-xs">
               {EMOTIONS.map((emotion) => {

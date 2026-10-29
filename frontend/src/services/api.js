@@ -68,7 +68,7 @@ export async function predictSegment(segmentId) {
   });
 }
 
-export async function predictRaw(text, audioFile, videoFile) {
+export async function predictRaw(text, audioFile, videoFile, model = 'mark3') {
   const formData = new FormData();
   if (text) formData.append('text', text);
   if (audioFile) formData.append('audio', audioFile);
@@ -78,8 +78,10 @@ export async function predictRaw(text, audioFile, videoFile) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
 
+  const endpoint = model === 'mark3' ? `${API_BASE}/predict/mark3/raw` : `${API_BASE}/predict/raw`;
+
   try {
-    const res = await fetch(`${API_BASE}/predict/raw`, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       body: formData,
       signal: controller.signal,
@@ -95,4 +97,23 @@ export async function predictRaw(text, audioFile, videoFile) {
     clearTimeout(id);
     throw err;
   }
+}
+
+export async function predictMark3Manifest(manifestOrPayload, targetSegmentNumber = null) {
+  let bodyPayload;
+  if (manifestOrPayload && manifestOrPayload.manifest) {
+    bodyPayload = manifestOrPayload;
+    if (targetSegmentNumber !== null && bodyPayload.target_segment_number === undefined) {
+      bodyPayload = { ...bodyPayload, target_segment_number: targetSegmentNumber };
+    }
+  } else if (targetSegmentNumber !== null) {
+    bodyPayload = { manifest: manifestOrPayload, target_segment_number: targetSegmentNumber };
+  } else {
+    bodyPayload = { manifest: manifestOrPayload };
+  }
+  return await fetchWithFallback('/predict/mark3/manifest', {
+    method: 'POST',
+    body: JSON.stringify(bodyPayload),
+    timeout: 60000,
+  });
 }
